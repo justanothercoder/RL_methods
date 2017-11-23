@@ -44,5 +44,20 @@ class Agent:
             Helper method to count number of episodes agent
             took.
         '''
-        self.episode_num += 1
         self.step_num = 0
+        
+        
+    def episode_end(self):
+        '''
+        '''
+        self.episode_num += 1
+        
+    
+    def step_start(self):
+        '''
+        '''
+        pass
+    
+    
+    def step_end(self):
+        self.step_num += 1
