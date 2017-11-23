@@ -33,12 +33,12 @@ class QTable(Agent):
         Q_new = reward + self.gamma * np.max(self.Q_table[new_observation, :])
         Q_old = self.Q_table[old_observation, action]
 
-        self.Q_table[old_observation, action] += self.alpha * (Q_new - Q_old)
+        self.Q_table[old_observation, action] = Q_old + self.alpha * (Q_new - Q_old)
 
 
     def act(self, observation):
         self.step_num += 1
 
-        noise = np.random.randn(1, self.env.action_space.n) * (1. / (self.step_num + 1))
+        noise = np.random.randn(1, self.env.action_space.n) * (1. / (self.episode_num + 1))
         action = np.argmax(self.Q_table[observation, :] + noise)
         return action
