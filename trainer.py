@@ -22,8 +22,6 @@ class Trainer:
         self.agent = agent
         self.config = config
 
-        self.rewards = None
-
 
     def train(self, num_episodes, max_steps):
         '''
@@ -32,15 +30,19 @@ class Trainer:
                 - num_episodes: int -- number of episodes to run;
                 - max_steps: int -- maximum number of steps during one episode.
         '''
-        self.rewards = []
+        rewards = []
+        lengths = []
 
         for i in range(num_episodes):
-            episode_reward = self.run_episode(max_steps)
-            self.rewards.append(episode_reward)
+            episode_reward, episode_length = self.run_episode(max_steps)
+            
+            rewards.append(episode_reward)
+            lengths.append(episode_length)
 
-            print("\rMean reward: {}".format(np.mean(self.rewards) / (i + 1)), end='')
-
-        return self.rewards
+            print("\rMean reward: {:5f}".format(np.mean(rewards)), end='')
+#            print("Mean reward: {:5f}".format(np.mean(rewards)))
+            
+        return rewards, lengths
 
 
     def run_episode(self, max_steps):
@@ -57,6 +59,9 @@ class Trainer:
         self.agent.episode_start()
 
         while not done and step_num < max_steps:
+            self.agent.step_start()
+            
+            step_num += 1
             action = self.agent.act(state)
 
             new_state, reward, done, _ = self.env.step(action)
@@ -64,6 +69,9 @@ class Trainer:
 
             episode_reward += reward
             state = new_state
-            step_num += 1
-
-        return episode_reward
+            
+            self.agent.step_end()
+            
+        self.agent.episode_end()
+            
+        return episode_reward, step_num
