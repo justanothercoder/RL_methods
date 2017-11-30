@@ -39,7 +39,7 @@ class Trainer:
             rewards.append(episode_reward)
             lengths.append(episode_length)
 
-            print("\rMean reward: {:5f}".format(np.mean(rewards)), end='')
+            print("\rEpisodes so far: {}; mean reward: {:5f}".format(i, np.mean(rewards)), end='')
 #            print("Mean reward: {:5f}".format(np.mean(rewards)))
             
         return rewards, lengths
@@ -59,13 +59,14 @@ class Trainer:
         self.agent.episode_start()
 
         while not done and step_num < max_steps:
+#            self.env.render()
             self.agent.step_start()
             
             step_num += 1
             action = self.agent.act(state)
 
             new_state, reward, done, _ = self.env.step(action)
-            self.agent.observe(state, action, new_state, reward)
+            self.agent.observe(state, action, new_state, reward, done)
 
             episode_reward += reward
             state = new_state

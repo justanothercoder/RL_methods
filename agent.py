@@ -16,7 +16,7 @@ class Agent:
         self.step_num = None
 
 
-    def observe(self, old_observation, action, new_observation, reward):
+    def observe(self, old_observation, action, new_observation, reward, done):
         '''
             This method should be implemented in subclasses.
             It should handle observation of transition of agent in
@@ -26,6 +26,7 @@ class Agent:
                 - action -- an action which agent took last time;
                 - new_observation -- new state of environment;
                 - reward -- a reward which agent received last time.
+                - done -- whether episode ended or not
         '''
         raise NotImplementedError
 
@@ -56,8 +57,9 @@ class Agent:
     def step_start(self):
         '''
         '''
-        pass
-    
+        self.step_num += 1
+        
     
     def step_end(self):
-        self.step_num += 1
+#        self.step_num += 1
+        pass

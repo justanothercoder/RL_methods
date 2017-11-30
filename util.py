@@ -35,6 +35,7 @@ def fc_network(input, num_layers, num_units):
         out = tf.layers.dense(out, 
                               num_units, 
                               activation=tf.nn.relu,
+                              use_bias=False,
                               name='dense_{}'.format(i))
         
     return out

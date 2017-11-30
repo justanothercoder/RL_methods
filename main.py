@@ -34,13 +34,13 @@ def main(flags):
             flags (dict): configuration
     '''
     env = gym.make('FrozenLake-v0')
-    env.seed(42)
-
-    import numpy as np
-    np.random.seed(42)
-
-    import tensorflow as tf
-    tf.set_random_seed(42)
+#    env.seed(42)
+#
+#    import numpy as np
+#    np.random.seed(42)
+#
+#    import tensorflow as tf
+#    tf.set_random_seed(42)
 
     agent = QNetwork(env,
                      gamma=flags.gamma,

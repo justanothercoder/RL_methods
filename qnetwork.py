@@ -10,16 +10,7 @@ from agent import Agent
 import numpy as np
 import tensorflow as tf
 
-
-def get_tf_config():
-    '''
-        This function returns tensorflow config.
-        Memory used by GPU is bounded by 0.4 * max memory
-    '''
-    config = tf.ConfigProto()
-    config.gpu_options.allow_growth = True
-    config.gpu_options.per_process_gpu_memory_fraction = 0.4
-    return config
+from util import get_tf_config
 
 
 class QNetwork(Agent):
@@ -139,7 +130,7 @@ class QNetwork(Agent):
         return out
 
 
-    def observe(self, old_observation, action, new_observation, reward):
+    def observe(self, old_observation, action, new_observation, reward, done):
         Q1 = self.compute_Q(new_observation)
         max_Q1 = np.max(Q1)
 

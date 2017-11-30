@@ -29,7 +29,7 @@ class QTable(Agent):
         self.alpha = alpha
 
 
-    def observe(self, old_observation, action, new_observation, reward):
+    def observe(self, old_observation, action, new_observation, reward, done):
         Q_new = reward + self.gamma * np.max(self.Q_table[new_observation, :])
         Q_old = self.Q_table[old_observation, action]
 
