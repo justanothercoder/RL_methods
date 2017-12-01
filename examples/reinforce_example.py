@@ -36,10 +36,11 @@ def main(flags):
     env = gym.make('CartPole-v0')
 
     agent = Reinforce(env,
-                     gamma=flags.gamma,
-                     learning_rate=flags.learning_rate,
-                     num_units=flags.num_units,
-                     num_layers=flags.num_layers)
+                      gamma=flags.gamma,
+                      learning_rate=flags.learning_rate,
+                      num_units=flags.num_units,
+                      num_layers=flags.num_layers,
+                      update_frequency=flags.update_frequency)
 
     trainer = Trainer(env, agent, flags)
     rewards, lengths = trainer.train(flags.num_episodes, flags.max_steps)
@@ -52,12 +53,13 @@ if __name__ == '__main__':
     os.environ['CUDA_VISIBLE_DEVICES'] = "0"
 
     reinforce_config = Config(
-        num_episodes=1000,
+        num_episodes=5000,
         learning_rate=0.01,
         gamma=0.99,
         max_steps=1000,
         num_units=8,
         num_layers=1,
+        update_frequency=1,
     )
 
     main(reinforce_config)

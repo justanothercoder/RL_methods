@@ -17,7 +17,7 @@ from util import get_tf_config, fc_network
 def _placeholder(shape, name=None, dtype=tf.float32):
     return tf.placeholder(dtype, shape, name)
 
-        
+
 def _one_hot(k, n):
     out = np.zeros(n)
     out[k] = 1
@@ -48,10 +48,10 @@ class Reinforce(Agent):
         self.gamma = gamma
         self.learning_rate = learning_rate
         self.update_frequency = update_frequency
-        
+
         self.num_layers = num_layers
         self.num_units = num_units
-        
+
         self.memory = Memory()
 
         tf.reset_default_graph()
@@ -66,7 +66,7 @@ class Reinforce(Agent):
             This method looks at the environment
             and determines if states and actions are discrete
             or not. If they are they should be pre- or post- processed.
-            
+
             Params:
                 - env: Environment -- environment to adapt to.
             Returns:
@@ -94,20 +94,22 @@ class Reinforce(Agent):
 
     def _build_output(self, out, action):
         if self.discrete_actions:
-            self.out = out = tf.layers.dense(out, 
-                                  self.num_actions, 
-                                  name="logits",
-                                  use_bias=False,
-                                  activation=tf.nn.softmax)
-            predict = tf.argmax(out, axis=1)
+            self.out = tf.layers.dense(out,
+                                       self.num_actions,
+                                       name="logits",
+                                       use_bias=False,
+                                       activation=tf.nn.softmax)
+            predict = tf.argmax(self.out, axis=1)
+
+#             there is some bug with tf.multinomial
             stoch_predict = tf.multinomial(out, 1)[:, 0]
-            
+
             loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
-                    logits=out,
-                    labels=action) * self.reward_placeholder
+                logits=self.out,
+                labels=action) * self.reward_placeholder
         else:
-            out = tf.layers.dense(out, 
-                                  2 * np.prod(self.action_shape), 
+            out = tf.layers.dense(out,
+                                  2 * np.prod(self.action_shape),
                                   name="actions",
                                   use_bias=False,
                                   activation=None)
@@ -117,9 +119,9 @@ class Reinforce(Agent):
 
             predict = mu
             stoch_predict = mu + sigma * eps
-            
+
             loss = tf.squared_difference(mu, action)
-            
+
         return predict, stoch_predict, tf.reduce_mean(loss)
 
 
@@ -140,14 +142,14 @@ class Reinforce(Agent):
             self.state_placeholder = _placeholder(state_shape, name='state')
             self.reward_placeholder = _placeholder([None], name='reward')
             self.action_placeholder = _placeholder(action_shape, name='action', dtype=tf.int32)
-    
-            self.out = fc_network(self.state_placeholder, 
-                             self.num_layers, 
-                             self.num_units)
-            
+
+            self.out = fc_network(self.state_placeholder,
+                                  self.num_layers,
+                                  self.num_units)
+
             self.predict, self.stoch_predict, self.loss = self._build_output(
-                    self.out, 
-                    self.action_placeholder)
+                self.out,
+                self.action_placeholder)
 
             optimizer = tf.train.AdamOptimizer(self.learning_rate)
             self.update = optimizer.minimize(self.loss)
@@ -171,15 +173,15 @@ class Reinforce(Agent):
 
     def observe(self, old_observation, action, new_observation, reward, done):
         self.memory.insert(
-                self.preprocess_state(old_observation), 
-                action,
-                self.preprocess_state(new_observation), 
-                reward, 
-                done)
+            self.preprocess_state(old_observation),
+            action,
+            self.preprocess_state(new_observation),
+            reward,
+            done)
 
-        if done:
+        if done and (self.episode_num + 1) % self.update_frequency == 0:
             discounted_rewards = self.memory.compute_returns(self.gamma)
-            
+
             self.sess.run(self.update,
                           feed_dict={
                               self.state_placeholder: self.memory.old_states,
@@ -195,7 +197,8 @@ class Reinforce(Agent):
         action_dist = self.sess.run(self.out, feed_dict)
         action = np.random.choice(self.num_actions, p=action_dist[0])
         return action
-    
-    
+
+
     def episode_end(self):
-        self.memory.clear()
+        if (self.episode_num + 1) % self.update_frequency == 0:
+            self.memory.clear()
