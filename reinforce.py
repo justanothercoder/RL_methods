@@ -31,6 +31,7 @@ class Reinforce(Agent):
             - learning_rate: float -- learning rate.
             - num_units: int -- number of units in layer
             - num_layers: int -- number of layers
+            - update_frequency: int -- number of episodes per update
     '''
 
     def __init__(self, env,
@@ -64,8 +65,12 @@ class Reinforce(Agent):
             belonging to it. As a result new members are acquired:
                 - self.out: tensor [batch_size, action_shape]
                     action or their logits
-                - self.predict: predicted action for greedy policy
+                - self._state: state placeholder
+                - self._action: action placeholder
+                - self._reward: reward placeholder
+                - self.loss: loss tensor
                 - self.update: train_op -- updates neural network using REINFORCE
+                - self.init: all variables initializer
         '''
         def num_or_shape(space):
             return space.n if isinstance(space, spaces.Discrete) else space.shape
@@ -106,11 +111,11 @@ class Reinforce(Agent):
     def observe(self, old_observation, action, new_observation, reward, done):
         old_observation = self.preprocess_state(old_observation)
         new_observation = self.preprocess_state(new_observation)
-        
-        self.memory.insert(old_observation, 
-                           action, 
-                           new_observation, 
-                           reward, 
+
+        self.memory.insert(old_observation,
+                           action,
+                           new_observation,
+                           reward,
                            done)
 
         if done and (self.episode_num + 1) % self.update_frequency == 0:
@@ -126,7 +131,7 @@ class Reinforce(Agent):
 
     def act(self, observation):
         observation = self.preprocess_state(observation)
-        return self.sess.run(self.policy.sample, 
+        return self.sess.run(self.policy.sample,
                              feed_dict={self._state: [observation]})[0]
 
 
