@@ -8,6 +8,7 @@
 
 from policy import Policy
 
+import numpy as np
 import tensorflow as tf
 from util import fc_network
 
@@ -71,16 +72,20 @@ class FeedForwardPolicy(Policy):
         self._action = tf.placeholder(shape=action_shape, dtype=tf.float32, name="action")
 
         self._pre_out = fc_network(self._state, self.num_layers, self.num_units)
-        self._out = tf.layers.dense(self._pre_out, self.num_actions, activation=None)
-
+        
         if self.discrete_actions:
+            self._out = tf.layers.dense(self._pre_out, self.num_actions, activation=None)
             cat = tf.distributions.Categorical(logits=self._out)
 
             self._predict = cat.mode()
             self._stoch_predict = cat.sample()
             self._logprob = cat.log_prob(self._action)
         else:
+            self._out = tf.layers.dense(self._pre_out, 2 * np.prod(self.action_shape), activation=None)
             self._mu, self._log_sigma = tf.split(self._out, 2, axis=1)
+            
+            self._mu = tf.reshape(self._mu, [-1] + list(self.action_shape))
+            self._log_sigma = tf.reshape(self._log_sigma, [-1] + list(self.action_shape))
 
             norm = tf.distributions.Normal(self._mu, tf.exp(self._log_sigma))
 

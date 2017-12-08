@@ -10,15 +10,20 @@
 import numpy as np
 
 
-def _discount_rewards(rewards, gamma):
-    discounted_rewards = np.zeros_like(rewards)
+def _compute_advantages(rewards, values, done, gamma, lambd, next_pred):
+    advantages = np.zeros_like(rewards)
     running_add = 0
-
-    for t in reversed(range(0, rewards.size)):
-        running_add = running_add * gamma + rewards[t]
-        discounted_rewards[t] = running_add
-
-    return discounted_rewards
+     
+    values = np.concatenate([values, next_pred[None]], axis=0)
+    done = np.append(done, 1)
+    
+    for t in reversed(range(0, rewards.shape[1])):
+        nonterminal = 1 - done[t + 1]
+        delta = rewards[t] + gamma * values[t + 1] * nonterminal - values[t]
+        advantages[t] = running_add = delta + gamma * lambd * nonterminal * running_add
+        
+    returns = advantages + values[:-1]
+    return advantages, returns
 
 
 class Memory:
@@ -30,7 +35,7 @@ class Memory:
         self.clear()
 
 
-    def insert(self, old_state, action, new_state, reward, done):
+    def insert(self, old_state, action, new_state, reward, done, value=None):
         '''
             This method stores transitions.
             Params:
@@ -45,6 +50,8 @@ class Memory:
         self._actions.append(action)
         self._rewards.append(reward)
         self._done.append(done)
+        
+        self._values.append(value)
 
 
     def compute_returns(self, gamma):
@@ -55,21 +62,35 @@ class Memory:
             Returns:
                 - discounted_rewards: np.array -- discounted rewards
         '''
-        self._discounted_rewards = np.zeros_like(self.rewards)
+
+        N, D = self.rewards.shape 
         
-        length = 0
+        self._discounted_rewards = np.zeros([N + 1, D])    
+
+        self._discounted_rewards[-1] = 0
+        masks = np.concatenate([1 - self.done, np.ones([1, 1])])
         
-        for t, d in enumerate(self._done):
-            length += 1
-        
-            if d:
-                self._discounted_rewards[t - length + 1: t + 1] = _discount_rewards(self.rewards[t - length + 1: t + 1], gamma)
-                length = 0
-                
-#                print("DONE")
-            
-#        self._discounted_rewards = _discount_rewards(self.rewards, gamma)
+        for step in reversed(range(N)):
+            R = self._discounted_rewards[step + 1]
+            r = self.rewards[step]
+            self._discounted_rewards[step] = r + R * gamma * masks[step + 1]
+
+        self._discounted_rewards = self.discounted_rewards[:-1]
         return self.discounted_rewards
+
+
+    def compute_advantages(self, gamma, lambd, next_pred):
+        self._advantages = np.zeros_like(self.rewards)
+        self._returns = np.zeros_like(self.rewards)
+        
+        adv, rets = _compute_advantages(
+                self.rewards, self.values, self.done,
+                gamma, lambd, next_pred)
+        
+        self._advantages = adv
+        self._discounted_rewards = rets
+                
+        return self.advantages, self.discounted_rewards
 
 
     def clear(self):
@@ -79,6 +100,10 @@ class Memory:
         self._actions = []
         self._rewards = []
         self._done = []
+        
+        self._discounted_rewards = []
+        self._values = []
+        self._advantages = []
 
 
     @property
@@ -115,3 +140,13 @@ class Memory:
     def discounted_rewards(self):
         '''Property: returns discounted rewards as array'''
         return np.array(self._discounted_rewards)
+
+
+    @property
+    def values(self):
+        return np.array(self._values)
+
+
+    @property
+    def advantages(self):
+        return np.array(self._advantages)

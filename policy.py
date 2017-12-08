@@ -29,6 +29,12 @@ class Policy:
 
 
     @property
+    def value_pred(self):
+        '''This method should return prediction of value function'''
+        raise NotImplementedError
+    
+
+    @property
     def state(self):
         '''This method should return state placeholder'''
         raise NotImplementedError

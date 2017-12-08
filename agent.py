@@ -16,7 +16,7 @@ class Agent:
         self.step_num = None
 
 
-    def observe(self, old_observation, action, new_observation, reward, done):
+    def observe(self, old_observation, action, new_observation, reward, done, value_pred=None):
         '''
             This method should be implemented in subclasses.
             It should handle observation of transition of agent in
