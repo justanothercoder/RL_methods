@@ -15,12 +15,16 @@ def _compute_advantages(rewards, values, done, gamma, lambd, next_pred):
     running_add = 0
      
     values = np.concatenate([values, next_pred[None]], axis=0)
-    done = np.append(done, 1)
+    masks = np.concatenate([1 - done, np.ones([1, done.shape[1]])])
     
-    for t in reversed(range(0, rewards.shape[1])):
-        nonterminal = 1 - done[t + 1]
-        delta = rewards[t] + gamma * values[t + 1] * nonterminal - values[t]
-        advantages[t] = running_add = delta + gamma * lambd * nonterminal * running_add
+    for t in reversed(range(0, rewards.shape[0])):
+        r = rewards[t]
+        V_new = values[t + 1]
+        V_old = values[t]
+        mask = masks[t + 1]
+        
+        delta = r + gamma * V_new * mask - V_old
+        advantages[t] = running_add = delta + gamma * lambd * mask * running_add
         
     returns = advantages + values[:-1]
     return advantages, returns

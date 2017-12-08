@@ -55,9 +55,9 @@ if __name__ == '__main__':
 
     a2c_config = Config(
         num_episodes=4000,
-        learning_rate=0.001,
+        learning_rate=0.005,
         gamma=1.,
-        lambd=0.7,
+        lambd=0.99,
         max_steps=1000,
         num_units=200,
         num_layers=1,

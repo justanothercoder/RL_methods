@@ -93,6 +93,7 @@ class A2C(Agent):
         self._value_target = tf.placeholder(shape=[None], dtype=tf.float32)
 
         self.policy_loss = -tf.reduce_mean(self._advantage * self.actor_critic.log_probability)
+#        self.policy_loss = -tf.reduce_mean((self._advantage - self.actor_critic.value_pred) * self.actor_critic.log_probability)
         self.value_loss = 0.5 * tf.reduce_mean(tf.squared_difference(self.actor_critic.value_pred, self._value_target))
 
         self.loss = self.policy_loss + self.value_loss
@@ -145,31 +146,31 @@ class A2C(Agent):
 
     def episode_end(self):
         if (self.episode_num + 1) % self.update_frequency == 0:
-#            advantages, returns = self.memory.compute_advantages(
-#                    self.gamma, 
-#                    self.lambd, 
-#                    self.next_pred)
+            advantages, returns = self.memory.compute_advantages(
+                    self.gamma, 
+                    self.lambd, 
+                    self.next_pred)
 
-            returns = self.memory.compute_returns(self.gamma)
+#            returns = self.memory.compute_returns(self.gamma)
             
             states = self.memory.old_states.reshape(-1, *self.actor_critic.state_shape)
             actions = self.memory.actions.reshape(-1, *self.actor_critic.action_shape)
-
-#            self.sess.run(self.update,
-#                          feed_dict={
-#                              self._state: states,
-#                              self._action: actions,
-#                              self._advantage: advantages.reshape(-1),
-#                              self._value_target: returns.reshape(-1)
-#                              })
 
             self.sess.run(self.update,
                           feed_dict={
                               self._state: states,
                               self._action: actions,
-                              self._advantage: returns.reshape(-1),
+                              self._advantage: advantages.reshape(-1),
                               self._value_target: returns.reshape(-1)
                               })
+
+#            self.sess.run(self.update,
+#                          feed_dict={
+#                              self._state: states,
+#                              self._action: actions,
+#                              self._advantage: returns.reshape(-1),
+#                              self._value_target: returns.reshape(-1)
+#                              })
 
 
             self.memory.clear()
