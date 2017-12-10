@@ -8,6 +8,19 @@
 '''
 
 import numpy as np
+from collections import namedtuple
+
+
+Batch = namedtuple('Batch',
+                   ['old_states',
+                    'new_states',
+                    'actions',
+                    'rewards',
+                    'done',
+                    'returns',
+                    'advantages',
+                    'values',
+                    'old_action_log_probability'])
 
 
 def _compute_advantages(rewards, values, done, gamma, lambd, next_pred):
@@ -39,7 +52,7 @@ class Memory:
         self.clear()
 
 
-    def insert(self, old_state, action, new_state, reward, done, value=None):
+    def insert(self, old_state, action, new_state, reward, done, value=None, action_logprob=None):
         '''
             This method stores transitions.
             Params:
@@ -56,6 +69,7 @@ class Memory:
         self._done.append(done)
         
         self._values.append(value)
+        self._old_action_log_probability.append(action_logprob)
 
 
     def compute_returns(self, gamma):
@@ -108,6 +122,47 @@ class Memory:
         self._discounted_rewards = []
         self._values = []
         self._advantages = []
+        
+        self._old_action_log_probability = []
+
+
+    def batch_generator(self, batch_size, shuffle=True):
+        N = len(self.old_states)
+        
+        indices = np.arange(N)
+        if shuffle:
+            np.random.shuffle(indices)
+        
+        for i in range(0, N - batch_size + 1, batch_size):
+            ind = indices[i: i + batch_size]
+            
+            batch = Batch(
+                    old_states=self.old_states[ind],
+                    new_states=self.new_states[ind],
+                    actions=self.actions[ind],
+                    rewards=self.rewards[ind],
+                    done=self.done[ind],
+                    returns=self.discounted_rewards[ind],
+                    advantages=self.advantages[ind],
+                    values=self.values[ind],
+                    old_action_log_probability=self.old_action_log_probability[ind]
+                    )
+            yield batch
+            
+        if N % batch_size != 0:
+            ind = indices[i:]
+            batch = Batch(
+                    old_states=self.old_states[ind],
+                    new_states=self.new_states[ind],
+                    actions=self.actions[ind],
+                    rewards=self.rewards[ind],
+                    done=self.done[ind],
+                    returns=self.discounted_rewards[ind],
+                    advantages=self.advantages[ind],
+                    values=self.values[ind],
+                    old_action_log_probability=self.old_action_log_probability[ind]
+                    )
+            yield batch 
 
 
     @property
@@ -154,3 +209,8 @@ class Memory:
     @property
     def advantages(self):
         return np.array(self._advantages)
+    
+    
+    @property
+    def old_action_log_probability(self):
+        return np.array(self._old_action_log_probability)
